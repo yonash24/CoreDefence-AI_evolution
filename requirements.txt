@@ -1,0 +1,5 @@
+arcade
+numpy
+pathfinding
+pydantic
+pyinstaller

@@ -1,0 +1,9 @@
+{
+  "towers": [],
+  "enemies": [],
+  "waves": [],
+  "settings": {
+    "difficulty_scaling": 1.0,
+    "director_adaptation_weight": 0.5
+  }
+}
