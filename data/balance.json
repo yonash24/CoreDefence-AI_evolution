@@ -3,12 +3,12 @@
     "rows": 12,
     "cols": 20,
     "tile_size": 64,
-    "tile_spacing": 2,
+    "tile_spacing": 1,
     "tiles": {
-      "path": "assets/tiles/path.png",
-      "build_spot": "assets/tiles/build_spot.png",
-      "core_area": "assets/tiles/core_area.png",
-      "highlight": "assets/tiles/highlight.png"
+      "path": "assets/path_tile.png",
+      "build_spot": "assets/build_tile.png",
+      "core_area": "assets/core_tile.png",
+      "highlight": "assets/hover_glow.png"
     }
   },
   "towers": [],

@@ -7,6 +7,7 @@ Aesthetic: Clean, Dark Sci-Fi / Cyberpunk Outpost.
 import arcade
 import numpy as np
 import json
+import os
 import logging
 from typing import Tuple, Dict, List, Optional
 
@@ -29,8 +30,6 @@ class Tile(arcade.Sprite):
         self.row = row
         self.col = col
         self.tile_type = tile_type
-        # Texture filtering to ensure crisp sci-fi look
-        self.texture.filter = (arcade.gl.NEAREST, arcade.gl.NEAREST)
 
 class GridManager:
     """
@@ -152,7 +151,7 @@ class GridManager:
 
     def draw(self):
         """Premium batched rendering."""
-        self.terrain_list.draw(pixelated=True)
+        self.terrain_list.draw()
         self.ui_list.draw()
 
     def update_hover_feedback(self, mouse_x: float, mouse_y: float):
