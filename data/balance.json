@@ -1,4 +1,16 @@
 {
+  "map_settings": {
+    "rows": 12,
+    "cols": 20,
+    "tile_size": 64,
+    "tile_spacing": 2,
+    "tiles": {
+      "path": "assets/tiles/path.png",
+      "build_spot": "assets/tiles/build_spot.png",
+      "core_area": "assets/tiles/core_area.png",
+      "highlight": "assets/tiles/highlight.png"
+    }
+  },
   "towers": [],
   "enemies": [],
   "waves": [],
