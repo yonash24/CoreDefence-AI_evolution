@@ -45,6 +45,9 @@ class GridManager:
         # Performance: Use Numpy for grid queries (AI, Pathfinding)
         self.grid = np.zeros((self.rows, self.cols), dtype=int)
         
+        # Training Data: AI Director learns from where players kill enemies
+        self.death_heatmap = np.zeros((self.rows, self.cols), dtype=float)
+        
         # Batched Rendering Lists
         self.terrain_list = arcade.SpriteList(use_spatial_hash=True)
         self.ui_list = arcade.SpriteList()  # For highlights/juice
@@ -183,6 +186,12 @@ class GridManager:
         if 0 <= row < self.rows and 0 <= col < self.cols:
             return self.grid[row, col] == TILE_BUILD_SPOT
         return False
+
+    def record_death(self, row: int, col: int):
+        """Increments the heatmap value at specified grid location."""
+        if 0 <= row < self.rows and 0 <= col < self.cols:
+            self.death_heatmap[row, col] += 1.0
+            logger.debug(f"Recorded death at ({row}, {col}). Current heat: {self.death_heatmap[row, col]}")
 
     def _get_world_pos(self, row: int, col: int) -> Tuple[float, float]:
         """Internal helper for pixel center of a cell."""

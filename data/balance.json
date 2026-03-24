@@ -11,8 +11,25 @@
       "highlight": "assets/hover_glow.png"
     }
   },
-  "towers": [],
-  "enemies": [],
+  "towers": [
+    {
+      "type": "Basic Tower",
+      "range": 200,
+      "damage": 10,
+      "fire_rate": 1.0,
+      "cost": 150,
+      "asset": "assets/tower_basic.png"
+    }
+  ],
+  "enemies": [
+    {
+      "type": "Fast Enemy",
+      "health": 30,
+      "speed": 4.5,
+      "reward": 25,
+      "asset": "assets/enemy_fast.png"
+    }
+  ],
   "waves": [],
   "settings": {
     "difficulty_scaling": 1.0,

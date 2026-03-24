@@ -16,16 +16,27 @@ class BaseEnemy(arcade.Sprite):
                  path: List[Tuple[int, int]], 
                  tile_stride: int,
                  health: int = 100, 
-                 speed: float = 2.0):
+                 speed: float = 2.0,
+                 **kwargs):
         # Initialize the sprite with a simple triangle shape if no image is available
         # For now, we'll try to find a texture or use a simple shape
         super().__init__(scale=1.0)
         
+        self.reward = kwargs.get("reward", 10)
         self.health = health
+        self.max_health = health
         self.speed = speed
+        self.is_dead = False
         self.path = path  # List of (col, row)
         self.tile_stride = tile_stride
         self.current_path_index = 0
+        
+    def take_damage(self, amount: int):
+        """Reduces health and flags enemy as dead if HP <= 0."""
+        self.health -= amount
+        if self.health <= 0:
+            self.health = 0
+            self.is_dead = True
         
         # Movement State
         self.target_x: Optional[float] = None
