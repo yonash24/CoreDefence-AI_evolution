@@ -13,6 +13,8 @@ if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
 from src.engine.map import GridManager
+from src.ai.pathing import Pathfinder
+from src.entities.enemies import BaseEnemy
 
 class CoreDefender(arcade.Window):
     """
@@ -25,6 +27,8 @@ class CoreDefender(arcade.Window):
         
         # Data-driven components
         self.grid_manager: GridManager = None
+        self.pathfinder: Pathfinder = None
+        self.enemy_list: arcade.SpriteList = None
         
         # Configuration Path
         self.config_path = os.path.join(PROJECT_ROOT, "data", "balance.json")
@@ -36,12 +40,36 @@ class CoreDefender(arcade.Window):
         """Initialize game state and components."""
         # 1. Initialize the GridManager (Loads logic/visuals from JSON)
         self.grid_manager = GridManager(self.config_path)
-        
+
         # 2. Synchronize Window Size with Grid Data
-        # GridManager calculates width_px/height_px from cols*stride
         new_width = self.grid_manager.cols * self.grid_manager.tile_stride
         new_height = self.grid_manager.rows * self.grid_manager.tile_stride
         self.set_size(new_width, new_height)
+        
+        # 3. Navigation and AI Setup
+        self.pathfinder = Pathfinder()
+        self.enemy_list = arcade.SpriteList()
+        
+        # 4. Spawn Test Enemy at start of the path
+        path_y = self.grid_manager.rows // 2
+        start_pos = (0, path_y)
+        end_pos = (self.grid_manager.cols - 1, path_y)
+        
+        # Calculate A* path
+        calculated_path = self.pathfinder.get_path(
+            self.grid_manager.grid, 
+            start_pos, 
+            end_pos
+        )
+        
+        # Spawn one drone at entry
+        if calculated_path:
+            test_enemy = BaseEnemy(
+                path=calculated_path, 
+                tile_stride=self.grid_manager.tile_stride,
+                speed=2.5
+            )
+            self.enemy_list.append(test_enemy)
         
         # Center the window on screen (optional but nice)
         self.set_update_rate(1/60)
@@ -53,6 +81,14 @@ class CoreDefender(arcade.Window):
         # Render the map system (Batched for performance)
         if self.grid_manager:
             self.grid_manager.draw()
+
+        # Render enemies
+        self.enemy_list.draw()
+
+    def on_update(self, delta_time: float):
+        """Update game logic and animations."""
+        # Update enemy movements based on their AI paths
+        self.enemy_list.update()
 
     def on_mouse_motion(self, x: float, y: float, dx: float, dy: float):
         """
