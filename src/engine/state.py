@@ -11,6 +11,7 @@ class GameState:
         self.gold = starting_gold
         self.lives = starting_lives
         self.game_over = False
+        self.wave_number = 0
 
     def add_gold(self, amount: int):
         """Adds gold to the player's treasury."""

@@ -13,6 +13,7 @@ from src.ai.pathing import Pathfinder
 from src.entities.enemies import BaseEnemy
 from src.entities.towers import BaseTower, Projectile
 from src.engine.state import GameState
+from src.ai.director import AIDirector
 
 class CoreDefender(arcade.Window):
     """
@@ -58,31 +59,12 @@ class CoreDefender(arcade.Window):
         self.set_size(new_width, new_height)
         
         # 4. Navigation and AI Setup
-        self.pathfinder = Pathfinder()
         self.enemy_list = arcade.SpriteList()
         self.tower_list = arcade.SpriteList()
         self.projectile_list = arcade.SpriteList()
         
-        # 5. Spawn Test Enemies
-        path_y = self.grid_manager.rows // 2
-        start_pos = (0, path_y)
-        end_pos = (self.grid_manager.cols - 1, path_y)
-        calculated_path = self.pathfinder.get_path(self.grid_manager.grid, start_pos, end_pos)
-        
-        if calculated_path:
-            # Load "Fast Enemy" stats
-            enemy_cfg = self.balance_data["enemies"][0]
-            for i in range(5):
-                test_enemy = BaseEnemy(
-                    path=calculated_path, 
-                    tile_stride=self.grid_manager.tile_stride,
-                    health=enemy_cfg["health"],
-                    speed=enemy_cfg["speed"],
-                    reward=enemy_cfg["reward"]
-                )
-                # Offset spawns slightly
-                test_enemy.center_x -= i * 100
-                self.enemy_list.append(test_enemy)
+        # 5. AI Director Setup (The Overmind)
+        self.director = AIDirector(self.balance_data, self.grid_manager)
         
         self.set_update_rate(1/60)
 
@@ -97,9 +79,9 @@ class CoreDefender(arcade.Window):
         self.enemy_list.draw()
         self.projectile_list.draw()
         
-        # Draw Economy UI
         arcade.draw_text(f"Gold: {self.game_state.gold}", 20, self.height - 40, arcade.color.GOLD, 18, font_name="Kenney Future")
         arcade.draw_text(f"Lives: {self.game_state.lives}", 20, self.height - 70, arcade.color.RED_DEVIL, 18, font_name="Kenney Future")
+        arcade.draw_text(f"Wave: {self.game_state.wave_number}", 20, self.height - 100, arcade.color.ELECTRIC_CYAN, 18, font_name="Kenney Future")
         
         if self.game_state.game_over:
             arcade.draw_text("MISSION FAILURE", self.width//2, self.height//2, arcade.color.RED, 50, anchor_x="center", font_name="Kenney Future")
@@ -112,6 +94,10 @@ class CoreDefender(arcade.Window):
         # 1. Update sprites
         self.enemy_list.update()
         self.projectile_list.update()
+        
+        # 2. Update AI Director
+        self.director.update(delta_time, self.enemy_list)
+        self.game_state.wave_number = self.director.current_wave
         
         # 2. Update Tower targeting and projectile spawning
         for tower in self.tower_list:

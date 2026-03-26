@@ -31,26 +31,27 @@ class BaseEnemy(arcade.Sprite):
         self.tile_stride = tile_stride
         self.current_path_index = 0
         
-    def take_damage(self, amount: int):
-        """Reduces health and flags enemy as dead if HP <= 0."""
-        self.health -= amount
-        if self.health <= 0:
-            self.health = 0
-            self.is_dead = True
-        
         # Movement State
         self.target_x: Optional[float] = None
         self.target_y: Optional[float] = None
         
         # Set initial position to first waypoint if available
         if self.path:
-            self.center_x, self.center_y = self._grid_to_world(self.path[0])
+            pos_x, pos_y = self._grid_to_world(self.path[0])
+            self.center_x = pos_x
+            self.center_y = pos_y
+            self.current_path_index = 1 # Start moving to the second node
             self._set_next_waypoint()
             
         # Aesthetic: Simple Drone/Triangle shape
-        # In a real scenario, this would be a sprite from a sheet.
-        # We'll create a simple texture here or assign a dummy one.
         self._create_simple_texture()
+        
+    def take_damage(self, amount: int):
+        """Reduces health and flags enemy as dead if HP <= 0."""
+        self.health -= amount
+        if self.health <= 0:
+            self.health = 0
+            self.is_dead = True
 
     def _create_simple_texture(self):
         """Creates a neon-colored triangle texture programmatically."""
