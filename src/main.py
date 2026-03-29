@@ -39,6 +39,7 @@ class CoreDefender(arcade.Window):
         self.config_path = os.path.join(PROJECT_ROOT, "data", "balance.json")
         
         # Visual Polish
+        self.show_ai_weights = False
         arcade.set_background_color(arcade.color.BLACK)
 
     def setup(self):
@@ -73,7 +74,7 @@ class CoreDefender(arcade.Window):
         self.clear()
         
         if self.grid_manager:
-            self.grid_manager.draw()
+            self.grid_manager.draw(show_heatmap=self.show_ai_weights)
 
         self.tower_list.draw()
         self.enemy_list.draw()
@@ -96,7 +97,7 @@ class CoreDefender(arcade.Window):
         self.projectile_list.update()
         
         # 2. Update AI Director
-        self.director.update(delta_time, self.enemy_list)
+        self.director.update(delta_time, self.enemy_list, self.tower_list)
         self.game_state.wave_number = self.director.current_wave
         
         # 2. Update Tower targeting and projectile spawning
@@ -154,6 +155,12 @@ class CoreDefender(arcade.Window):
         """Responsive feedback: 'Juice' the UI by updating hover highlights."""
         if self.grid_manager:
             self.grid_manager.update_hover_feedback(x, y)
+
+    def on_key_press(self, key, modifiers):
+        """Handle keyboard inputs."""
+        if key == arcade.key.H:
+            self.show_ai_weights = not self.show_ai_weights
+            print(f"AI Weight Visualization: {'ENABLED' if self.show_ai_weights else 'DISABLED'}")
 
 def main():
     """Application Entry Point."""

@@ -152,10 +152,27 @@ class GridManager:
                 
                 self.terrain_list.append(tile)
 
-    def draw(self):
+    def draw(self, show_heatmap: bool = False):
         """Premium batched rendering."""
         self.terrain_list.draw()
+        if show_heatmap:
+            self.draw_heatmap()
         self.ui_list.draw()
+
+    def draw_heatmap(self):
+        """Visualizes the AI's learning data (death heatmap)."""
+        for row in range(self.rows):
+            for col in range(self.cols):
+                heat = self.death_heatmap[row, col]
+                if heat > 0:
+                    x, y = self._get_world_pos(row, col)
+                    # Simple rectangle for heat visualization
+                    # Fade intensity based on heat (capped at 150 alpha)
+                    alpha = min(150, int(heat * 20))
+                    arcade.draw_rectangle_filled(
+                        x, y, self.tile_base_size, self.tile_base_size,
+                        (255, 0, 0, alpha)
+                    )
 
     def update_hover_feedback(self, mouse_x: float, mouse_y: float):
         """
@@ -192,6 +209,10 @@ class GridManager:
         if 0 <= row < self.rows and 0 <= col < self.cols:
             self.death_heatmap[row, col] += 1.0
             logger.debug(f"Recorded death at ({row}, {col}). Current heat: {self.death_heatmap[row, col]}")
+
+    def decay_heat(self, amount: float = 0.1):
+        """Cool down the heatmap over time (waves)."""
+        self.death_heatmap = np.maximum(0, self.death_heatmap - amount)
 
     def _get_world_pos(self, row: int, col: int) -> Tuple[float, float]:
         """Internal helper for pixel center of a cell."""

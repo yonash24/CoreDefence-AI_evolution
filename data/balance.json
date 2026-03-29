@@ -28,6 +28,20 @@
       "speed": 4.5,
       "reward": 25,
       "asset": "assets/enemy_fast.png"
+    },
+    {
+      "type": "Tank Enemy",
+      "health": 150,
+      "speed": 1.5,
+      "reward": 50,
+      "asset": "assets/enemy_tank.png"
+    },
+    {
+      "type": "Scout Enemy",
+      "health": 20,
+      "speed": 6.0,
+      "reward": 15,
+      "asset": "assets/enemy_scout.png"
     }
   ],
   "waves": [],
