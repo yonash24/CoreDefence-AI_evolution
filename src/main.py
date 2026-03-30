@@ -18,6 +18,25 @@ from src.engine.state import GameState
 from src.ai.director import AIDirector
 from src.ui.hud import HUD, MainMenu, GameOverMenu
 import numpy as np
+import random
+
+class FadeParticle(arcade.Sprite):
+    """Simple particle that fades out and moves."""
+    def __init__(self, x, y, color):
+        super().__init__()
+        self.texture = arcade.make_soft_circle_texture(10, color)
+        self.center_x = x
+        self.center_y = y
+        self.change_x = random.uniform(-3, 3)
+        self.change_y = random.uniform(-3, 3)
+        self.alpha = 255
+        
+    def update(self):
+        self.alpha = max(0, self.alpha - 15)
+        self.center_x += self.change_x
+        self.center_y += self.change_y
+        if self.alpha == 0:
+            self.remove_from_sprite_lists()
 
 class CoreDefender(arcade.View):
     """
@@ -60,7 +79,17 @@ class CoreDefender(arcade.View):
         # 3. Synchronize Window Size with Grid Data
         new_width = self.grid_manager.cols * self.grid_manager.tile_stride
         new_height = self.grid_manager.rows * self.grid_manager.tile_stride
-        self.window.set_size(new_width, new_height)
+        
+        # Audio Juice
+        self.shoot_sound = arcade.load_sound(":resources:sounds/laser2.wav")
+        self.hit_sound = arcade.load_sound(":resources:sounds/explosion2.wav")
+        self.build_sound = arcade.load_sound(":resources:sounds/coin1.wav")
+        self.fail_sound = arcade.load_sound(":resources:sounds/error4.wav")
+        
+        # Visual Juice
+        self.camera = arcade.Camera(self.window.width, self.window.height)
+        self.shake_timer = 0.0
+        self.particle_list = arcade.SpriteList()
         
         self.hud = HUD(new_width, new_height, self.balance_data)
         
@@ -75,12 +104,18 @@ class CoreDefender(arcade.View):
         """Render the application."""
         self.clear()
         
+        self.camera.use()
+        
         if self.grid_manager:
             self.grid_manager.draw(show_heatmap=self.show_ai_weights)
 
         self.tower_list.draw()
         self.enemy_list.draw()
         self.projectile_list.draw()
+        self.particle_list.draw()
+        
+        # Reset camera for HUD
+        arcade.Camera(self.window.width, self.window.height).use()
         
         arcade.draw_text(f"Gold: {self.game_state.gold}", 20, self.window.height - 40, arcade.color.GOLD, 18, font_name="Kenney Future")
         arcade.draw_text(f"Lives: {self.game_state.lives}", 20, self.window.height - 70, arcade.color.RED_DEVIL, 18, font_name="Kenney Future")
@@ -102,9 +137,18 @@ class CoreDefender(arcade.View):
             self.window.show_view(game_over_view)
             return
 
-        # 1. Update sprites
+        # 1. Update sprites and juice
         self.enemy_list.update()
         self.projectile_list.update()
+        self.particle_list.update()
+        
+        if self.shake_timer > 0:
+            shake_x = random.uniform(-10, 10) * self.shake_timer
+            shake_y = random.uniform(-10, 10) * self.shake_timer
+            self.camera.move_to((shake_x, shake_y))
+            self.shake_timer -= delta_time * 2
+        else:
+            self.camera.move_to((0, 0))
         
         # 2. Update AI Director
         self.director.update(delta_time, self.enemy_list, self.tower_list)
@@ -116,6 +160,7 @@ class CoreDefender(arcade.View):
             while tower.projectiles_to_spawn:
                 p = tower.projectiles_to_spawn.pop(0)
                 self.projectile_list.append(p)
+                arcade.play_sound(self.shoot_sound, volume=0.2)
 
         # 3. Collision and Combat Logic
         for projectile in self.projectile_list:
@@ -123,6 +168,10 @@ class CoreDefender(arcade.View):
             if hit_list:
                 for enemy in hit_list:
                     enemy.take_damage(projectile.damage)
+                    # Spawn impact juice
+                    for _ in range(5):
+                        self.particle_list.append(FadeParticle(enemy.center_x, enemy.center_y, arcade.color.ELECTRIC_CYAN))
+                arcade.play_sound(self.hit_sound, volume=0.3)
                 projectile.remove_from_sprite_lists()
 
         # 4. Handle Enemy Death and Goal Reach
@@ -131,12 +180,17 @@ class CoreDefender(arcade.View):
             row, col = self.grid_manager.get_cell_from_mouse_coords(enemy.center_x, enemy.center_y)
             if self.grid_manager.grid[row, col] == 3: # 3 is TILE_CORE
                 self.game_state.remove_lives(1)
+                self.shake_timer = 1.0 # Screen shake
+                arcade.play_sound(self.fail_sound, volume=0.5)
                 enemy.remove_from_sprite_lists()
             
             # Dead?
             elif enemy.health <= 0:
                 self.game_state.add_gold(enemy.reward)
                 self.grid_manager.record_death(row, col)
+                # Death explosion
+                for _ in range(15):
+                    self.particle_list.append(FadeParticle(enemy.center_x, enemy.center_y, arcade.color.MAGENTA))
                 enemy.remove_from_sprite_lists()
 
     def on_mouse_press(self, x: float, y: float, button: int, modifiers: int):
@@ -160,11 +214,24 @@ class CoreDefender(arcade.View):
                     world_pos = self.grid_manager._get_world_pos(row, col)
                     new_tower = BaseTower(world_pos[0], world_pos[1], tower_cfg)
                     self.tower_list.append(new_tower)
+                    arcade.play_sound(self.build_sound)
+                    
+                    # Spawn build particles
+                    for _ in range(10):
+                        self.particle_list.append(FadeParticle(world_pos[0], world_pos[1], arcade.color.WHITE))
+                else:
+                    arcade.play_sound(self.fail_sound, volume=0.5)
 
     def on_mouse_motion(self, x: float, y: float, dx: float, dy: float):
         """Responsive feedback: 'Juice' the UI by updating hover highlights."""
         if self.grid_manager:
+            prev_alpha = self.grid_manager.hover_highlight.alpha
             self.grid_manager.update_hover_feedback(x, y)
+            
+            # Play tiny click sound on new valid tile hover
+            if prev_alpha == 0 and self.grid_manager.hover_highlight.alpha > 0:
+                # Built-in subtle tick if we had one, but we can reuse a very quiet UI sound or skip
+                pass
 
     def on_key_press(self, key, modifiers):
         """Handle keyboard inputs."""

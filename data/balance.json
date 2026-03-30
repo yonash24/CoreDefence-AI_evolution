@@ -13,40 +13,55 @@
   },
   "towers": [
     {
-      "type": "Basic Tower",
-      "range": 200,
-      "damage": 10,
-      "fire_rate": 1.0,
-      "cost": 150,
+      "type": "Pulse Cannon",
+      "range": 220,
+      "damage": 12,
+      "fire_rate": 0.8,
+      "cost": 120,
       "asset": "assets/tower_basic.png"
+    },
+    {
+      "type": "Heavy Ion",
+      "range": 300,
+      "damage": 45,
+      "fire_rate": 2.2,
+      "cost": 250,
+      "asset": "assets/tower_heavy.png"
+    },
+    {
+      "type": "Swarm Blaster",
+      "range": 150,
+      "damage": 5,
+      "fire_rate": 0.2,
+      "cost": 180,
+      "asset": "assets/tower_rapid.png"
     }
   ],
   "enemies": [
     {
       "type": "Fast Enemy",
-      "health": 30,
-      "speed": 4.5,
-      "reward": 25,
+      "health": 25,
+      "speed": 5.0,
+      "reward": 15,
       "asset": "assets/enemy_fast.png"
     },
     {
       "type": "Tank Enemy",
-      "health": 150,
+      "health": 200,
       "speed": 1.5,
-      "reward": 50,
+      "reward": 45,
       "asset": "assets/enemy_tank.png"
     },
     {
       "type": "Scout Enemy",
-      "health": 20,
-      "speed": 6.0,
-      "reward": 15,
+      "health": 40,
+      "speed": 4.0,
+      "reward": 25,
       "asset": "assets/enemy_scout.png"
     }
   ],
-  "waves": [],
   "settings": {
-    "difficulty_scaling": 1.0,
-    "director_adaptation_weight": 0.5
+    "difficulty_scaling": 1.15,
+    "director_adaptation_weight": 0.75
   }
 }
