@@ -43,8 +43,11 @@ class AIDirector:
         self.start_pos = getattr(self.grid_manager, 'start_pos', (0, self.grid_manager.rows // 2))
         self.end_pos = getattr(self.grid_manager, 'core_pos', (self.grid_manager.cols - 1, self.grid_manager.rows // 2))
         
-        # Threat assessment
+        # Threat assessment and Strategy evaluation
         self.tower_threat_map = np.zeros((self.grid_manager.rows, self.grid_manager.cols), dtype=float)
+        self.player_strategy = "neutral"
+        self.avg_tower_damage = 0.0
+        self.avg_tower_rate = 0.0
 
     def start_next_wave(self, tower_list: arcade.SpriteList = None):
         """Prepare and start the next tactical wave."""
@@ -92,13 +95,27 @@ class AIDirector:
     def _spawn_enemy(self, enemy_list: arcade.SpriteList):
         """Create a new enemy with evolved attributes and adaptive pathing."""
         # 1. Selection: Probabilistic selection of enemy types based on wave
+        # The AI adapts to the player's tower composition
         types = self.balance_data["enemies"]
+        
+        # Assume indices: 0 = Fast, 1 = Tank, 2 = Scout
         if self.current_wave < 3:
-            # Only fast enemies at first
+            # Gentle intro
             enemy_cfg = types[0]
         else:
-            # Mix in tanks and scouts
-            enemy_cfg = random.choices(types, weights=[50, 25, 25])[0]
+            weights = [34, 33, 33] # Default balance
+            
+            # Counter-strategies
+            if self.player_strategy == "swarm":
+                # Player builds lots of low-damage fast-firing towers -> Tanks are highly effective
+                weights = [15, 70, 15]
+                logger.info("AI ADAPTATION: Spawning Tanks to counter swarm defense.")
+            elif self.player_strategy == "heavy":
+                # Player builds high-damage slow-firing towers -> Swarm them with fast/scout enemies
+                weights = [50, 10, 40]
+                logger.info("AI ADAPTATION: Spawning Fast/Scouts to counter heavy defense.")
+                
+            enemy_cfg = random.choices(types, weights=weights)[0]
         
         # 2. Adaptive Pathfinding (AI Evolution)
         # We calculate a path that avoids the 'death heatmap'
@@ -159,7 +176,8 @@ class AIDirector:
             for c in range(cols):
                 if weight_matrix[r, c] > 0: # If walkable
                     death_penalty = (heatmap[r, c] / (max_heat if max_heat > 0 else 1.0)) * 20
-                    tower_penalty = self.tower_threat_map[r, c] * 15
+                    # Aggressively avoid tower firing ranges
+                    tower_penalty = self.tower_threat_map[r, c] * 45
                     
                     penalty = int((death_penalty + tower_penalty) * self.adaptation_weight)
                     weight_matrix[r, c] += penalty
@@ -175,12 +193,22 @@ class AIDirector:
         return [(node.x, node.y) for node in path]
 
     def _update_tower_threat(self, tower_list: arcade.SpriteList):
-        """Map out areas covered by player towers to help the AI navigate better."""
+        """Map out areas covered by player towers and evaluate overall strategy."""
         self.tower_threat_map.fill(0)
         rows, cols = self.grid_manager.rows, self.grid_manager.cols
         tile_stride = self.grid_manager.tile_stride
         
+        if not tower_list:
+            self.player_strategy = "neutral"
+            return
+            
+        total_damage = 0
+        total_rate = 0
+        
         for tower in tower_list:
+            total_damage += getattr(tower, "damage", 10)
+            total_rate += getattr(tower, "fire_rate", 1.0)
+            
             # Radius in tiles
             r_tiles = int(tower.range / tile_stride) + 1
             t_row, t_col = self.grid_manager.get_cell_from_mouse_coords(tower.center_x, tower.center_y)
@@ -192,3 +220,18 @@ class AIDirector:
                     if dist <= r_tiles:
                         # Threat increases inversely to distance, normalized
                         self.tower_threat_map[r, c] += 1.0 - (dist / r_tiles)
+
+        # Strategy Evaluation Layer
+        num_towers = len(tower_list)
+        self.avg_tower_damage = total_damage / num_towers
+        self.avg_tower_rate = total_rate / num_towers
+        
+        # Thresholds:
+        # High damage slow fire => heavy
+        # Low damage fast fire => swarm
+        if self.avg_tower_damage < 20 and self.avg_tower_rate <= 1.5:
+            self.player_strategy = "swarm"
+        elif self.avg_tower_damage >= 30:
+            self.player_strategy = "heavy"
+        else:
+            self.player_strategy = "neutral"
