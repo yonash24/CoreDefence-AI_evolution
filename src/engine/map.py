@@ -10,7 +10,7 @@ import json
 import os
 import logging
 from typing import Tuple, Dict, List, Optional
-from src.utils.resources import resolve as _resolve, get_project_root
+from src.utils.resources import resolve as _resolve, get_project_root, load_level
 
 # Set up logging for professional debugging
 logger = logging.getLogger(__name__)
@@ -62,8 +62,12 @@ class GridManager:
         self.width_px = self.cols * self.tile_stride
         self.height_px = self.rows * self.tile_stride
         
+        # Start and core positions (dynamically found)
+        self.start_pos = (0, self.rows // 2)
+        self.core_pos = (self.cols - 1, self.rows // 2)
+        
         # Build initial map layout
-        self._generate_static_map()
+        self._generate_map_from_level("level_1.json")
         self._initialize_sprites()
 
     def _load_config(self):
@@ -100,24 +104,40 @@ class GridManager:
             self.scale = 0.25
             self.textures = {}
 
-    def _generate_static_map(self):
+    def _generate_map_from_level(self, level_name: str):
         """
-        Creates the logical level layout in the Numpy matrix.
-        In a full implementation, this could load from a .tmx or .json map file.
+        Creates the logical level layout in the Numpy matrix from a JSON file.
+        Also infers start and core positions.
         """
-        # Create a simple path for demonstration
-        path_y = self.rows // 2
-        self.grid[path_y, :] = TILE_PATH
-        
-        # Place the Core at the end
-        self.grid[path_y, self.cols - 1] = TILE_CORE
-        
-        # Surround path with building spots for tactical depth
-        for x in range(2, self.cols - 2):
-            if self.grid[path_y - 1, x] == TILE_EMPTY:
-                self.grid[path_y - 1, x] = TILE_BUILD_SPOT
-            if self.grid[path_y + 1, x] == TILE_EMPTY:
-                self.grid[path_y + 1, x] = TILE_BUILD_SPOT
+        try:
+            level_data = load_level(level_name)
+            layout = level_data.get("layout", [])
+            for r, row_data in enumerate(layout):
+                if r >= self.rows: break
+                for c, val in enumerate(row_data):
+                    if c >= self.cols: break
+                    self.grid[r, c] = val
+                    if val == TILE_CORE:
+                        self.core_pos = (c, r)
+            
+            # Find a path entry point on the left edge (col 0)
+            for r in range(self.rows):
+                if self.grid[r, 0] == TILE_PATH:
+                    self.start_pos = (0, r)
+                    break
+        except Exception as e:
+            logger.error(f"Failed to load level {level_name}: {e}")
+            # Fallback demonstration path
+            path_y = self.rows // 2
+            self.grid[path_y, :] = TILE_PATH
+            self.grid[path_y, self.cols - 1] = TILE_CORE
+            self.start_pos = (0, path_y)
+            self.core_pos = (self.cols - 1, path_y)
+            for x in range(2, self.cols - 2):
+                if self.grid[path_y - 1, x] == TILE_EMPTY:
+                    self.grid[path_y - 1, x] = TILE_BUILD_SPOT
+                if self.grid[path_y + 1, x] == TILE_EMPTY:
+                    self.grid[path_y + 1, x] = TILE_BUILD_SPOT
 
     def _initialize_sprites(self):
         """Batch-creates sprites for the terrain list."""

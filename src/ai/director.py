@@ -40,8 +40,8 @@ class AIDirector:
         self.evolved_speed_bonus = 0.0
         
         # Pathfinding parameters
-        self.start_pos = (0, self.grid_manager.rows // 2)
-        self.end_pos = (self.grid_manager.cols - 1, self.grid_manager.rows // 2)
+        self.start_pos = getattr(self.grid_manager, 'start_pos', (0, self.grid_manager.rows // 2))
+        self.end_pos = getattr(self.grid_manager, 'core_pos', (self.grid_manager.cols - 1, self.grid_manager.rows // 2))
         
         # Threat assessment
         self.tower_threat_map = np.zeros((self.grid_manager.rows, self.grid_manager.cols), dtype=float)
