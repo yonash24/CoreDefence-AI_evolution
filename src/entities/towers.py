@@ -8,6 +8,8 @@ import math
 import time
 from typing import Optional
 import numpy as np
+import os
+from src.utils.resources import resolve, asset_exists
 
 class Projectile(arcade.Sprite):
     """
@@ -56,10 +58,14 @@ class BaseTower(arcade.Sprite):
         # Stats: range, damage, fire_rate, cost
         super().__init__(scale=scale)
         
-        # Create a pylon-like texture (simple rectangle build for now)
-        # In production, we'd load a .png from data/balance.json path
-        self.texture = arcade.make_soft_circle_texture(64, arcade.color.COOL_GREY)
-        self.color = (0, 255, 255) # Cyan glow
+        # Try to load custom texture, else fallback
+        asset_path = stats.get("asset")
+        if asset_path and asset_exists(asset_path):
+            self.texture = arcade.load_texture(resolve(asset_path))
+            self.color = arcade.color.WHITE # Reset color if custom texture is used
+        else:
+            self.texture = arcade.make_soft_circle_texture(64, arcade.color.COOL_GREY)
+            self.color = (0, 255, 255)  # Cyan glow
         
         self.center_x = x
         self.center_y = y

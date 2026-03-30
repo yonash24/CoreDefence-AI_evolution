@@ -5,7 +5,9 @@ Handles enemy behavior, health, and path-based navigation.
 
 import arcade
 import math
+import os
 from typing import List, Tuple, Optional
+from src.utils.resources import resolve, asset_exists
 
 class BaseEnemy(arcade.Sprite):
     """
@@ -43,8 +45,10 @@ class BaseEnemy(arcade.Sprite):
             self.current_path_index = 1 # Start moving to the second node
             self._set_next_waypoint()
             
-        # Aesthetic: Simple Drone/Triangle shape
-        self._create_simple_texture()
+        # Aesthetic: Load texture or use simple shapes based on type
+        self.asset = kwargs.get("asset")
+        self.enemy_type = kwargs.get("type", "Unknown")
+        self._load_visuals()
         
     def take_damage(self, amount: int):
         """Reduces health and flags enemy as dead if HP <= 0."""
@@ -53,17 +57,21 @@ class BaseEnemy(arcade.Sprite):
             self.health = 0
             self.is_dead = True
 
-    def _create_simple_texture(self):
-        """Creates a neon-colored triangle texture programmatically."""
-        # This is a bit advanced for arcade.Sprite without a file, 
-        # but we can create one using a DrawingContext or similar.
-        # For simplicity and given the prompt, we'll assume a triangle is better.
-        # If we can't find a file, arcade.make_soft_circle_texture or similar can work.
-        # Let's use a simple color sprite for now.
-        self.texture = arcade.make_soft_circle_texture(32, arcade.color.ELECTRIC_CYAN)
-        # We can simulate a triangle by changing the drawing if needed, 
-        # but the prompt implies we should have a sprite.
-        # Let's stick with this for now.
+    def _load_visuals(self):
+        """Loads specialized texture or creates visually distinct shapes if missing."""
+        if self.asset and asset_exists(self.asset):
+            self.texture = arcade.load_texture(resolve(self.asset))
+        else:
+            # Fallback based on enemy archetype/health/speed combination
+            # Try to guess from the asset name roughly if we don't have a specific `enemy_type` arg
+            if self.asset and "fast" in self.asset.lower() or self.speed > 3.0:
+                self.texture = arcade.make_soft_circle_texture(24, arcade.color.ELECTRIC_CYAN)
+            elif self.asset and "tank" in self.asset.lower() or self.health > 100:
+                self.texture = arcade.make_soft_square_texture(48, arcade.color.RED_DEVIL, 255, 255)
+            elif self.asset and "scout" in self.asset.lower():
+                self.texture = arcade.make_soft_circle_texture(28, arcade.color.NEON_CARROT)
+            else:
+                self.texture = arcade.make_soft_circle_texture(32, arcade.color.MAGENTA)
 
     def _grid_to_world(self, grid_pos: Tuple[int, int]) -> Tuple[float, float]:
         """Converts (col, row) grid index to world coordinates (pixels)."""

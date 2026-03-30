@@ -117,7 +117,8 @@ class AIDirector:
             tile_stride=self.grid_manager.tile_stride,
             health=int(scaled_health),
             speed=scaled_speed,
-            reward=enemy_cfg["reward"]
+            reward=enemy_cfg["reward"],
+            asset=enemy_cfg.get("asset")
         )
         
         # Position at the start of the path
