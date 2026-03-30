@@ -6,7 +6,9 @@ import json
 # Ensure project root is in sys.path for internal imports
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
-    sys.path.append(PROJECT_ROOT)
+    sys.path.insert(0, PROJECT_ROOT)
+
+from src.utils.resources import load_balance, resolve
 
 from src.engine.map import GridManager
 from src.ai.pathing import Pathfinder
@@ -35,8 +37,8 @@ class CoreDefender(arcade.Window):
         self.game_state: GameState = None
         self.balance_data = {}
         
-        # Configuration Path
-        self.config_path = os.path.join(PROJECT_ROOT, "data", "balance.json")
+        # Configuration Path (kept for GridManager; resource loader used elsewhere)
+        self.config_path = resolve("data/balance.json")
         
         # Visual Polish
         self.show_ai_weights = False
@@ -44,9 +46,8 @@ class CoreDefender(arcade.Window):
 
     def setup(self):
         """Initialize game state and components."""
-        # Load balance data
-        with open(self.config_path, 'r') as f:
-            self.balance_data = json.load(f)
+        # Load balance data via centralised resource loader
+        self.balance_data = load_balance()
 
         # 1. Initialize Game State
         self.game_state = GameState(starting_gold=500, starting_lives=20)

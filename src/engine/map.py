@@ -10,6 +10,7 @@ import json
 import os
 import logging
 from typing import Tuple, Dict, List, Optional
+from src.utils.resources import resolve as _resolve, get_project_root
 
 # Set up logging for professional debugging
 logger = logging.getLogger(__name__)
@@ -68,29 +69,28 @@ class GridManager:
     def _load_config(self):
         """Loads grid dimensions and assets from JSON with robust path resolution."""
         try:
-            # Resolve relative to the root of the project
-            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-            full_config_path = os.path.join(project_root, self.config_path)
-            
+            # Use the centralised resource loader – always relative to project root
+            full_config_path = _resolve(self.config_path)
+
             with open(full_config_path, 'r') as f:
                 full_data = json.load(f)
                 cfg = full_data.get("map_settings", {})
-                
+
             self.rows = cfg.get("rows", 12)
             self.cols = cfg.get("cols", 20)
             self.tile_base_size = cfg.get("tile_size", 64)
             self.tile_spacing = cfg.get("tile_spacing", 1)
             self.tile_stride = self.tile_base_size + self.tile_spacing
-            
+
             # Asset relative paths resolved to absolute
             raw_textures = cfg.get("tiles", {})
             self.textures = {
-                k: os.path.join(project_root, v) for k, v in raw_textures.items()
+                k: _resolve(v) for k, v in raw_textures.items()
             }
-            
+
             # Auto-calculate scale (Assets are 256x256)
             self.scale = self.tile_base_size / 256.0
-            
+
         except (FileNotFoundError, json.JSONDecodeError) as e:
             logger.error(f"Failed to load map config: {e}")
             # Fallback defaults
@@ -98,6 +98,7 @@ class GridManager:
             self.tile_base_size = 64
             self.tile_stride = 65
             self.scale = 0.25
+            self.textures = {}
 
     def _generate_static_map(self):
         """

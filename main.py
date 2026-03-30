@@ -1,11 +1,17 @@
-import arcade
+"""
+Core Defender: AI Evolution
+Root entry point — delegates to src/main.py
+"""
+import os
+import sys
 
-SCREEN_WIDTH = 1000
-SCREEN_HEIGHT = 700
-SCREEN_TITLE = "Core Defender: Adaptive AI"
+# Ensure the project root is always in sys.path so imports work
+# regardless of cwd (e.g. running `python main.py` from project root)
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
-class CoreDefender:
-    def __init__(self):
-        
+from src.main import main  # noqa: E402
 
-        
+if __name__ == "__main__":
+    main()
